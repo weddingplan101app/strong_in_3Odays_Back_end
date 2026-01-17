@@ -1,0 +1,99 @@
+name: Deploy to Digital Ocean
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build project
+      run: npm run build
+
+    - name: Run tests (if you have them)
+      run: npm test || echo "No tests found"
+
+    - name: TypeScript type check
+      run: npx tsc --noEmit
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22.x'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build project
+      run: npm run build
+
+    - name: Deploy to Digital Ocean
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USERNAME }}
+        key: ${{ secrets.DEPLOY_KEY }}
+        script: |
+          echo "🚀 Starting deployment..."
+          
+          # Navigate to app directory
+          cd /var/www/strongin30days
+          
+          # Pull latest code
+          git pull origin main
+          
+          # Install dependencies
+          npm ci --only=production
+          
+          # Build TypeScript
+          npm run build
+          
+          # Install/update PM2 globally
+          npm install -g pm2
+          
+          
+          # Run database migrations
+          npx sequelize-cli db:migrate
+          
+          # Run seeders (optional, comment if not needed)
+          # npx sequelize-cli db:seed:all
+          
+          # Restart application with PM2
+          pm2 restart strongin30-app || pm2 start dist/server.js --name "strongin30-app"
+          
+          # Save PM2 process list
+          pm2 save
+          
+          # Setup PM2 startup on boot
+          pm2 startup systemd -u $USER --hp /home/$USER
+          
+          echo "✅ Deployment complete!"

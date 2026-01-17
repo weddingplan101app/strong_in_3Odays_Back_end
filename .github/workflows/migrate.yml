@@ -1,0 +1,41 @@
+name: Database Migrations
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    paths:
+      - 'src/migrations/**'
+      - 'src/seeders/**'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.5.4
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+    - name: Run migrations
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USERNAME }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          cd /var/www/strongin30days
+          
+          # Pull latest migrations
+          git pull origin main
+          
+          # Install dependencies if needed
+          npm ci --only=production
+          
+          # Build project
+          npm run build
+          
+          # Run migrations
+          npx sequelize-cli db:migrate
+          
+          echo "✅ Database migrations complete"
+        EOF
