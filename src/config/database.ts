@@ -9,7 +9,7 @@ dotenv.config();
 const dbConfig = {
   database: process.env.DB_NAME || 'strong_in_30',
   username: process.env.DB_USER || 'strongin30',
-  password: process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASSWORD || '123456strong@',
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   dialect: 'postgres' as const,
