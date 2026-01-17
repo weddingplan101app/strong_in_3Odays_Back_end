@@ -37,7 +37,7 @@ console.log('authRoute:', authRoute)
   //   { path: '/api/v1/subscriptions', router: subscriptionRoutes },
   //   { path: '/api/admin', router: adminRoutes },
   ];
-  console.log('Routes array:d', routes);
+  console.log('Routes array:dj', routes);
 
   const app = new App(routes);
 
