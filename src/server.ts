@@ -2,6 +2,8 @@
   import 'module-alias/register';
   import dotenv from 'dotenv';
   import path from 'path';
+
+  dotenv.config({ path: path.resolve(__dirname, '../.env') })
   import { Router } from 'express';
   import { Server } from 'http';
   import App from './app';
@@ -9,11 +11,13 @@
   import authRoute from './modules/auth/auth.routes'
   import subscriptionRoutes from './modules/subscription/subscription.route';
   import programRoutes from './modules/program/programs.route';
+  
+ 
   // Import other routes as needed
 
   // Load environment variables based on NODE_ENV
-  const envPath = path.resolve(process.cwd(), `.env.${process.env.NODE_ENV || 'development'}`);
-  dotenv.config({ path: path.resolve(__dirname, '../.env') })
+  // const envPath = path.resolve(process.cwd(), `.env.${process.env.NODE_ENV || 'development'}`);
+ 
 
   // import workoutRoutes from './api/v1/routes/workout.routes';
   // import subscriptionRoutes from './api/v1/routes/subscription.routes';
