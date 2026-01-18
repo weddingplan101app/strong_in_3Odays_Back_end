@@ -66,10 +66,34 @@ jobs:
           echo "🚀 Starting deployment..."
           
           # Navigate to app directory
-          cd /var/www/strongin30days
+          cd /var/www/strongin30days/strong_in_3Odays_Back_end
           
           # Pull latest code
           git pull origin main
+          
+          # Create or update .env file with database configuration
+          cat > .env << 'EOL'
+          NODE_ENV=production
+          PORT=9000
+          
+          # Database configuration
+          DB_NAME=strongin30days
+          DB_USER=strongin30
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_HOST=localhost
+          DB_PORT=5432
+          
+          # JWT Configuration
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRE=30d
+          JWT_COOKIE_EXPIRE=30
+          
+          # Other environment variables
+          LOG_LEVEL=info
+          EOL
+          
+          # Set proper permissions for .env
+          chmod 600 .env
           
           # Install dependencies
           npm ci --only=production
@@ -80,6 +104,13 @@ jobs:
           # Install/update PM2 globally
           npm install -g pm2
           
+          # Set environment variables for the current session
+          export NODE_ENV=production
+          export DB_NAME=strongin30days
+          export DB_USER=strongin30
+          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          export DB_HOST=localhost
+          export DB_PORT=5432
           
           # Run database migrations
           npx sequelize-cli db:migrate
@@ -87,13 +118,14 @@ jobs:
           # Run seeders (optional, comment if not needed)
           # npx sequelize-cli db:seed:all
           
-          # Restart application with PM2
-          pm2 restart strongin30-app || pm2 start dist/server.js --name "strongin30-app"
+          # Restart application with PM2 with environment variables
+          pm2 delete strongin30-app || true
+          NODE_ENV=production DB_NAME=strongin30days DB_USER=strongin30 DB_PASSWORD=${{ secrets.DB_PASSWORD }} DB_HOST=localhost DB_PORT=5432 pm2 start dist/server.js --name "strongin30-app"
           
           # Save PM2 process list
           pm2 save
           
           # Setup PM2 startup on boot
-          pm2 startup systemd -u $USER --hp /home/$USER
+          sudo env PATH=$PATH:/usr/bin /usr/local/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
           
           echo "✅ Deployment complete!"
