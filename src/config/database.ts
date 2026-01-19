@@ -42,7 +42,7 @@ const sequelize = new Sequelize({
   logging: process.env.NODE_ENV === 'development' 
     ? (sql: string) => logger.debug(sql) 
     : false,
-  models: [path.join(__dirname, '../models/**/*.{js,ts}')],
+  // models: [path.join(__dirname, '../models/**/*.{js,ts}')],
 });
 
 export { sequelize };
