@@ -38,6 +38,7 @@ public listen(): Server {
       logger.info(`======= ENV: ${this.env} =======`);
       logger.info(`🚀 App listening on port ${this.port}`);
       logger.info(`=================================`);
+      logger.info(`Database Config - Host: ${process.env.DB_HOST}, User: ${process.env.DB_USER}, DB: ${process.env.DB_NAME}, Port: ${process.env.DB_PORT}`);
     });
     
     return server;

@@ -1,9 +1,10 @@
 import { Sequelize } from 'sequelize-typescript';
 import dotenv from 'dotenv';
+dotenv.config();
 import path from 'path';
 import { logger } from '../utils/logger';
 
-dotenv.config();
+
 
 // Extract the database configuration for reuse
 const dbConfig = {
