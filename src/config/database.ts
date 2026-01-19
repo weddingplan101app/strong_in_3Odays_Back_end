@@ -13,7 +13,7 @@ import { Admin } from '../models/Admin.model';
 import { AdminActivityLog } from '../models/AdminActivityLog.model';
 import { AdminInvite } from '../models/AdminInvite.model';
 dotenv.config();
-dotenv.config(); // ← must run first
+
 
 // 🔍 DEBUG — add THESE lines
 console.log('DB_NAME:', process.env.DB_NAME);
@@ -33,7 +33,7 @@ const dbConfig = {
   database: process.env.DB_NAME,
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || '127.0.0.1',
   port: parseInt(process.env.DB_PORT || '5432'),
   dialect: 'postgres' as const,
   dialectModule: require('pg'),
