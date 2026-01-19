@@ -141,7 +141,7 @@ export class ProgramsController {
    */
  async getProgramDetails(req: AuthRequest<{ slug: string }>, res: Response) {
     try {
-      const { slug } = req.params;
+      const { slug } =  (req as any).params;
       const userId = req.user?.id;
 
       if (!slug) return res.status(400).json({ success: false, error: 'Program slug is required' });
@@ -171,7 +171,7 @@ export class ProgramsController {
    */
   async getWorkoutVideo(req: AuthRequest<{ programSlug: string; day: string }>, res: Response) {
     try {
-      const { programSlug, day } = req.params;
+      const { programSlug, day } = (req as any).params;
       const userId = req.user?.id;
 
       if (!programSlug || !day) return res.status(400).json({ success: false, error: 'Program slug and day are required' });
@@ -244,8 +244,8 @@ export class ProgramsController {
    */
   async markWorkoutCompleted(req: AuthRequest<{ programSlug: string }, any, { day: string; timeSpent: string }>, res: Response) {
     try {
-      const { programSlug } = req.params;
-      const { day, timeSpent } = req.body;
+      const { programSlug } = (req as any).params;
+      const { day, timeSpent } = (req as any).body;
       const userId = req.user?.id;
 
       if (!userId) return res.status(401).json({ success: false, error: 'Authentication required' });
@@ -275,9 +275,9 @@ export class ProgramsController {
   /**
    * Get user program progress (Protected - requires authentication)
    */
-  async getUserProgramProgress(req: AuthRequest, res: Response) {
+  async getUserProgramProgress(req: AuthRequest<{ programSlug: string }>, res: Response) {
     try {
-      const { programSlug } = req.params;
+      const { programSlug } = (req as any).params;
       const userId = req.user?.id;
       
       // Check authentication
@@ -402,8 +402,8 @@ export class ProgramsController {
    */
  async rateWorkout(req: AuthRequest<{ programSlug: string; day: string }, any, { rating: string }>, res: Response) {
     try {
-      const { programSlug, day } = req.params;
-      const { rating } = req.body;
+      const { programSlug, day } = (req as any).params;
+      const { rating } = (req as any).body;
       const userId = req.user?.id;
 
       if (!userId) return res.status(401).json({ success: false, error: 'Authentication required' });
@@ -449,7 +449,7 @@ async getUserWorkoutHistory(req: AuthRequest<any, any, any, { limit?: string; of
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ success: false, error: 'Authentication required' });
 
-      const { limit = '20', offset = '0' } = req.query;
+      const { limit = '20', offset = '0' } = (req as any).query;
       const limitNum = parseInt(limit, 10);
       const offsetNum = parseInt(offset, 10);
 
@@ -602,7 +602,7 @@ async getUserWorkoutHistory(req: AuthRequest<any, any, any, { limit?: string; of
    */
   async getAllPrograms(req: Request, res: Response) {
     try {
-      const { limit = 50, offset = 0, sort = 'enrollmentCount', order = 'DESC' } = req.query;
+      const { limit = 50, offset = 0, sort = 'enrollmentCount', order = 'DESC' } = (req as any).query;
 
       // Validate parameters
       const limitNum = parseInt(limit as string, 10);
