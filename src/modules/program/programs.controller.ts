@@ -9,10 +9,10 @@ import { ActivityLog } from '../../models/ActivityLog.model';
 
 // Define authenticated request interface based on your User model
 export interface AuthRequest<
-  Params = any,
+  Params = Record<string, any>,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = any
+  ReqQuery = Record<string, any>
 > extends Request<Params, ResBody, ReqBody, ReqQuery> {
   user?: {
     id: string;
@@ -37,6 +37,7 @@ export interface AuthRequest<
     updatedAt: Date;
   };
 }
+
 @Service()
 export class ProgramsController {
   constructor(private programsService: ProgramsService) {}
@@ -138,111 +139,55 @@ export class ProgramsController {
   /**
    * Get program details (Public, but shows user progress if authenticated)
    */
-  async getProgramDetails(req: AuthRequest, res: Response) {
+ async getProgramDetails(req: AuthRequest<{ slug: string }>, res: Response) {
     try {
       const { slug } = req.params;
       const userId = req.user?.id;
-      
-      if (!slug) {
-        return res.status(400).json({
-          success: false,
-          error: 'Program slug is required'
-        });
-      }
 
-      logger.info('Controller: Fetching program details', {
-        slug,
-        userId: userId || 'anonymous'
-      });
+      if (!slug) return res.status(400).json({ success: false, error: 'Program slug is required' });
 
+      logger.info('Controller: Fetching program details', { slug, userId: userId || 'anonymous' });
       const programData = await this.programsService.getProgramDetails(slug);
-      
-      // If user is authenticated, get their progress too
+
       if (userId) {
         try {
           const progress = await this.programsService.getUserProgramProgress(userId, slug);
-          return res.status(200).json({
-            success: true,
-            data: {
-              ...programData,
-              userProgress: progress
-            }
-          });
+          return res.status(200).json({ success: true, data: { ...programData, userProgress: progress } });
         } catch (progressError) {
-          // If progress fetch fails, just return program data without progress
-          logger.warn('Controller: Could not fetch user progress', {
-            error: (progressError as Error).message,
-            userId,
-            slug
-          });
+          logger.warn('Controller: Could not fetch user progress', { error: (progressError as Error).message, userId, slug });
         }
       }
-      
-      res.status(200).json({
-        success: true,
-        data: programData
-      });
+
+      res.status(200).json({ success: true, data: programData });
     } catch (error: any) {
-      logger.error('Controller: Failed to get program details', {
-        error: error.message,
-        slug: req.params.slug
-      });
-      
+      logger.error('Controller: Failed to get program details', { error: error.message, slug: req.params.slug });
       const statusCode = error.message === 'Program not found' ? 404 : 500;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to fetch program details'
-      });
+      res.status(statusCode).json({ success: false, error: error.message || 'Failed to fetch program details' });
     }
   }
 
   /**
    * Get workout video by day (Public, but tracks view for authenticated users)
    */
-  async getWorkoutVideo(req: AuthRequest, res: Response) {
+  async getWorkoutVideo(req: AuthRequest<{ programSlug: string; day: string }>, res: Response) {
     try {
       const { programSlug, day } = req.params;
       const userId = req.user?.id;
-      
-      if (!programSlug || !day) {
-        return res.status(400).json({
-          success: false,
-          error: 'Program slug and day are required'
-        });
-      }
+
+      if (!programSlug || !day) return res.status(400).json({ success: false, error: 'Program slug and day are required' });
 
       const dayNumber = parseInt(day, 10);
-      if (isNaN(dayNumber) || dayNumber < 0 || dayNumber > 30) {
-        return res.status(400).json({
-          success: false,
-          error: 'Day must be a number between 1 and 30'
-        });
-      }
+      if (isNaN(dayNumber) || dayNumber < 1 || dayNumber > 30)
+        return res.status(400).json({ success: false, error: 'Day must be a number between 1 and 30' });
 
-      logger.info('Controller: Fetching workout video', {
-        programSlug,
-        day: dayNumber,
-        userId: userId || 'anonymous'
-      });
+      logger.info('Controller: Fetching workout video', { programSlug, day: dayNumber, userId: userId || 'anonymous' });
 
       const data = await this.programsService.getWorkoutVideo(programSlug, dayNumber);
-      
-      res.status(200).json({
-        success: true,
-        data
-      });
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      logger.error('Controller: Failed to get workout video', {
-        error: error.message,
-        programSlug: req.params.programSlug,
-        day: req.params.day
-      });
-      
+      logger.error('Controller: Failed to get workout video', { error: error.message, programSlug: req.params.programSlug, day: req.params.day });
       const statusCode = error.message.includes('not found') ? 404 : 500;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to fetch workout video'
-      });
+      res.status(statusCode).json({ success: false, error: error.message || 'Failed to fetch workout video' });
     }
   }
 
@@ -297,76 +242,33 @@ export class ProgramsController {
   /**
    * Mark workout as completed (Protected - requires authentication)
    */
-  async markWorkoutCompleted(req: AuthRequest, res: Response) {
+  async markWorkoutCompleted(req: AuthRequest<{ programSlug: string }, any, { day: string; timeSpent: string }>, res: Response) {
     try {
       const { programSlug } = req.params;
       const { day, timeSpent } = req.body;
       const userId = req.user?.id;
-      
-      // Check authentication
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'Authentication required'
-        });
-      }
 
-      // Basic validation
-      if (!programSlug || !day || !timeSpent) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required fields: program slug, day, timeSpent'
-        });
-      }
+      if (!userId) return res.status(401).json({ success: false, error: 'Authentication required' });
+      if (!programSlug || !day || !timeSpent)
+        return res.status(400).json({ success: false, error: 'Missing required fields: program slug, day, timeSpent' });
 
       const dayNumber = parseInt(day, 10);
       const timeSpentNumber = parseInt(timeSpent, 10);
-      
-      if (isNaN(dayNumber) || dayNumber < 1 || dayNumber > 30) {
-        return res.status(400).json({
-          success: false,
-          error: 'Day must be a number between 1 and 30'
-        });
-      }
-      
-      if (isNaN(timeSpentNumber) || timeSpentNumber <= 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'Time spent must be a positive number'
-        });
-      }
 
-      logger.info('Controller: Marking workout as completed', {
-        userId,
-        programSlug,
-        day: dayNumber,
-        timeSpent: timeSpentNumber
-      });
+      if (isNaN(dayNumber) || dayNumber < 1 || dayNumber > 30)
+        return res.status(400).json({ success: false, error: 'Day must be a number between 1 and 30' });
 
-      const data = await this.programsService.markWorkoutCompleted(
-        userId,
-        programSlug,
-        dayNumber,
-        timeSpentNumber
-      );
-      
-      res.status(200).json({
-        success: true,
-        data
-      });
+      if (isNaN(timeSpentNumber) || timeSpentNumber <= 0)
+        return res.status(400).json({ success: false, error: 'Time spent must be a positive number' });
+
+      logger.info('Controller: Marking workout as completed', { userId, programSlug, day: dayNumber, timeSpent: timeSpentNumber });
+
+      const data = await this.programsService.markWorkoutCompleted(userId, programSlug, dayNumber, timeSpentNumber);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      logger.error('Controller: Failed to mark workout as completed', {
-        error: error.message,
-        userId: req.user?.id,
-        programSlug: req.params.programSlug,
-        body: req.body
-      });
-      
+      logger.error('Controller: Failed to mark workout as completed', { error: error.message, userId: req.user?.id, programSlug: req.params.programSlug, body: req.body });
       const statusCode = error.message.includes('not found') ? 404 : 500;
-      res.status(statusCode).json({
-        success: false,
-        error: error.message || 'Failed to mark workout as completed'
-      });
+      res.status(statusCode).json({ success: false, error: error.message || 'Failed to mark workout as completed' });
     }
   }
 
@@ -498,250 +400,88 @@ export class ProgramsController {
   /**
    * Rate a workout (Protected - requires authentication)
    */
-  async rateWorkout(req: AuthRequest, res: Response) {
+ async rateWorkout(req: AuthRequest<{ programSlug: string; day: string }, any, { rating: string }>, res: Response) {
     try {
       const { programSlug, day } = req.params;
       const { rating } = req.body;
       const userId = req.user?.id;
-      
-      // Check authentication
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'Authentication required'
-        });
-      }
 
-      if (!programSlug || !day || rating === undefined) {
-        return res.status(400).json({
-          success: false,
-          error: 'Missing required fields: program slug, day, rating'
-        });
-      }
+      if (!userId) return res.status(401).json({ success: false, error: 'Authentication required' });
+      if (!programSlug || !day || rating === undefined)
+        return res.status(400).json({ success: false, error: 'Missing required fields: program slug, day, rating' });
 
       const dayNumber = parseInt(day, 10);
       const ratingNumber = parseInt(rating, 10);
-      
-      if (isNaN(dayNumber) || dayNumber < 1 || dayNumber > 30) {
-        return res.status(400).json({
-          success: false,
-          error: 'Day must be a number between 1 and 30'
-        });
-      }
-      
-      if (isNaN(ratingNumber) || ratingNumber < 1 || ratingNumber > 5) {
-        return res.status(400).json({
-          success: false,
-          error: 'Rating must be a number between 1 and 5'
-        });
-      }
 
-      logger.info('Controller: Rating workout', {
-        userId,
-        programSlug,
-        day: dayNumber,
-        rating: ratingNumber
-      });
+      if (isNaN(dayNumber) || dayNumber < 1 || dayNumber > 30)
+        return res.status(400).json({ success: false, error: 'Day must be a number between 1 and 30' });
 
-      // Find the program first using the imported Program model
-      const program = await Program.findOne({
-        where: { 
-          slug: programSlug,
-          status: 'published',
-          isActive: true 
-        }
-      });
-      
-      if (!program) {
-        return res.status(404).json({
-          success: false,
-          error: 'Program not found'
-        });
-      }
+      if (isNaN(ratingNumber) || ratingNumber < 1 || ratingNumber > 5)
+        return res.status(400).json({ success: false, error: 'Rating must be a number between 1 and 5' });
 
-      // Find the video using the imported WorkoutVideo model
-      const video = await WorkoutVideo.findOne({
-        where: {
-          programId: program.id,
-          day: dayNumber,
-          isActive: true
-        }
-      });
-      
-      if (!video) {
-        return res.status(404).json({
-          success: false,
-          error: 'Workout video not found'
-        });
-      }
+      logger.info('Controller: Rating workout', { userId, programSlug, day: dayNumber, rating: ratingNumber });
 
-      // Find the user's activity for this video using the imported ActivityHistory model
-      const activity = await ActivityHistory.findOne({
-        where: {
-          userId,
-          programId: program.id,
-          workoutVideoId: video.id,
-          isCompleted: true
-        }
-      });
-      
-      if (!activity) {
-        return res.status(400).json({
-          success: false,
-          error: 'You must complete the workout before rating it'
-        });
-      }
+      // Find program and video
+      const program = await Program.findOne({ where: { slug: programSlug, status: 'published', isActive: true } });
+      if (!program) return res.status(404).json({ success: false, error: 'Program not found' });
 
-      // Update the rating
-      await activity.update({
-        rating: ratingNumber,
-        updatedAt: new Date()
-      });
+      const video = await WorkoutVideo.findOne({ where: { programId: program.id, day: dayNumber, isActive: true } });
+      if (!video) return res.status(404).json({ success: false, error: 'Workout video not found' });
 
-      // Log the rating activity using the imported ActivityLog model
-      await ActivityLog.create({
-        userId,
-        action: 'WORKOUT_RATED',
-        entityType: 'workout_video',
-        entityId: video.id,
-        details: {
-          programSlug,
-          day: dayNumber,
-          rating: ratingNumber,
-          videoId: video.id,
-          programId: program.id
-        }
-      });
-      
-      res.status(200).json({
-        success: true,
-        data: {
-          message: 'Workout rated successfully',
-          rating: ratingNumber,
-          activityId: activity.id
-        }
-      });
+      const activity = await ActivityHistory.findOne({ where: { userId, programId: program.id, workoutVideoId: video.id, isCompleted: true } });
+      if (!activity) return res.status(400).json({ success: false, error: 'You must complete the workout before rating it' });
+
+      await activity.update({ rating: ratingNumber, updatedAt: new Date() });
+      await ActivityLog.create({ userId, action: 'WORKOUT_RATED', entityType: 'workout_video', entityId: video.id, details: { programSlug, day: dayNumber, rating: ratingNumber, videoId: video.id, programId: program.id } });
+
+      res.status(200).json({ success: true, data: { message: 'Workout rated successfully', rating: ratingNumber, activityId: activity.id } });
     } catch (error: any) {
-      logger.error('Controller: Failed to rate workout', {
-        error: error.message,
-        userId: req.user?.id,
-        programSlug: req.params.programSlug,
-        body: req.body
-      });
-      
-      res.status(500).json({
-        success: false,
-        error: 'Failed to rate workout'
-      });
+      logger.error('Controller: Failed to rate workout', { error: error.message, userId: req.user?.id, programSlug: req.params.programSlug, body: req.body });
+      res.status(500).json({ success: false, error: 'Failed to rate workout' });
     }
   }
 
   /**
    * Get user's workout history (Protected - requires authentication)
    */
-  async getUserWorkoutHistory(req: AuthRequest, res: Response) {
+async getUserWorkoutHistory(req: AuthRequest<any, any, any, { limit?: string; offset?: string }>, res: Response) {
     try {
       const userId = req.user?.id;
-      
-      // Check authentication
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          error: 'Authentication required'
-        });
-      }
+      if (!userId) return res.status(401).json({ success: false, error: 'Authentication required' });
 
-      const { limit = 20, offset = 0 } = req.query;
+      const { limit = '20', offset = '0' } = req.query;
+      const limitNum = parseInt(limit, 10);
+      const offsetNum = parseInt(offset, 10);
 
-      // Validate limit and offset
-      const limitNum = parseInt(limit as string, 10);
-      const offsetNum = parseInt(offset as string, 10);
-      
-      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
-        return res.status(400).json({
-          success: false,
-          error: 'Limit must be a number between 1 and 100'
-        });
-      }
-      
-      if (isNaN(offsetNum) || offsetNum < 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'Offset must be a non-negative number'
-        });
-      }
+      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) return res.status(400).json({ success: false, error: 'Limit must be a number between 1 and 100' });
+      if (isNaN(offsetNum) || offsetNum < 0) return res.status(400).json({ success: false, error: 'Offset must be a non-negative number' });
 
-      logger.info('Controller: Fetching user workout history', {
-        userId,
-        limit: limitNum,
-        offset: offsetNum
-      });
+      logger.info('Controller: Fetching user workout history', { userId, limit: limitNum, offset: offsetNum });
 
-      // Get completed activities using the imported models
       const activities = await ActivityHistory.findAll({
-        where: {
-          userId,
-          isCompleted: true
-        },
-        include: [
-          {
-            model: WorkoutVideo,
-            as: 'workoutVideo',
-            include: [{
-              model: Program,
-              as: 'program'
-            }]
-          }
-        ],
+        where: { userId, isCompleted: true },
+        include: [{ model: WorkoutVideo, as: 'workoutVideo', include: [{ model: Program, as: 'program' }] }],
         order: [['completedAt', 'DESC']],
         limit: limitNum,
         offset: offsetNum
       });
-      
-      // Format response
-      const history = activities.map((activity:any) => ({
+
+      const history = activities.map((activity: any) => ({
         id: activity.id,
-        program: {
-          id: activity.workoutVideo?.program?.id,
-          name: activity.workoutVideo?.program?.name,
-          slug: activity.workoutVideo?.program?.slug,
-          coverImageUrl: activity.workoutVideo?.program?.coverImageUrl
-        },
-        video: {
-          id: activity.workoutVideo?.id,
-          day: activity.day,
-          title: activity.workoutVideo?.title,
-          duration: activity.workoutVideo?.duration,
-          thumbnailUrl: activity.workoutVideo?.thumbnailUrl
-        },
+        program: { id: activity.workoutVideo?.program?.id, name: activity.workoutVideo?.program?.name, slug: activity.workoutVideo?.program?.slug, coverImageUrl: activity.workoutVideo?.program?.coverImageUrl },
+        video: { id: activity.workoutVideo?.id, day: activity.day, title: activity.workoutVideo?.title, duration: activity.workoutVideo?.duration, thumbnailUrl: activity.workoutVideo?.thumbnailUrl },
         completedAt: activity.completedAt,
         timeSpent: (activity.details as any)?.timeSpent || activity.watchedDuration,
         rating: activity.rating,
         details: activity.details
       }));
-      
-      res.status(200).json({
-        success: true,
-        data: {
-          history,
-          total: history.length,
-          limit: limitNum,
-          offset: offsetNum
-        }
-      });
+
+      res.status(200).json({ success: true, data: { history, total: history.length, limit: limitNum, offset: offsetNum } });
     } catch (error: any) {
-      logger.error('Controller: Failed to get user workout history', {
-        error: error.message,
-        userId: req.user?.id
-      });
-      
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch workout history'
-      });
+      logger.error('Controller: Failed to get user workout history', { error: error.message, userId: req.user?.id });
+      res.status(500).json({ success: false, error: 'Failed to fetch workout history' });
     }
   }
-
   /**
    * Get user statistics (Protected - requires authentication)
    */
