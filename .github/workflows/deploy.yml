@@ -16,10 +16,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
@@ -43,10 +43,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '22.x'
 
@@ -62,6 +62,7 @@ jobs:
         host: ${{ secrets.DEPLOY_HOST }}
         username: ${{ secrets.DEPLOY_USERNAME }}
         key: ${{ secrets.DEPLOY_KEY }}
+        port: 22
         script: |
           echo "🚀 Starting deployment..."
           
@@ -72,28 +73,56 @@ jobs:
           git pull origin main
           
           # Create or update .env file with database configuration
-          cat > .env << 'EOL'
-          NODE_ENV=production
-          PORT=9000
-          
-          # Database configuration
-          DB_NAME=strong_in_30
-          DB_USER=strongin30
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          DB_HOST=localhost
-          DB_PORT=5432
-          
-          # JWT Configuration
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          JWT_EXPIRE=30d
-          JWT_COOKIE_EXPIRE=30
-          
-          # Other environment variables
-          LOG_LEVEL=info
-          EOL
+          # Use GitHub Secrets for sensitive values
+          cat > .env << 'EOF'
+NODE_ENV=production
+PORT=3000
+
+# Database configuration
+DB_NAME=strong_in_30
+DB_USER=strongin30
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+DB_HOST=localhost
+DB_PORT=5432
+
+# JWT Configuration
+JWT_SECRET=${{ secrets.JWT_SECRET }}
+JWT_EXPIRE=30d
+JWT_COOKIE_EXPIRE=30
+
+# Other environment variables
+LOG_LEVEL=info
+EOF
           
           # Set proper permissions for .env
           chmod 600 .env
+          
+          # Create/update ecosystem.config.js
+          cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'strongin30-app',
+    script: 'dist/server.js',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000,
+      DB_HOST: 'localhost',
+      DB_PORT: 5432,
+      DB_NAME: 'strong_in_30',
+      DB_USER: 'strongin30',
+      DB_PASSWORD: '${{ secrets.DB_PASSWORD }}',
+      JWT_SECRET: '${{ secrets.JWT_SECRET }}',
+      JWT_EXPIRE: '30d',
+      JWT_COOKIE_EXPIRE: 30,
+      LOG_LEVEL: 'info'
+    }
+  }]
+};
+EOF
           
           # Install dependencies
           npm ci --only=production
@@ -101,31 +130,21 @@ jobs:
           # Build TypeScript
           npm run build
           
-          # Install/update PM2 globally
-          npm install -g pm2
+          # Run database migrations if sequelize-cli is available
+          if [ -f node_modules/.bin/sequelize-cli ] || [ -f node_modules/.bin/sequelize ]; then
+            npx sequelize-cli db:migrate 2>/dev/null || echo "Migrations not found or failed"
+          fi
           
-          # Set environment variables for the current session
-          export NODE_ENV=production
-          export DB_NAME=strong_in_30
-          export DB_USER=strongin30
-          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          export DB_HOST=localhost
-          export DB_PORT=5432
-          
-          # Run database migrations
-          npx sequelize-cli db:migrate
-          
-          # Run seeders (optional, comment if not needed)
-          # npx sequelize-cli db:seed:all
-          
-          # Restart application with PM2 with environment variables
+          # Restart application with PM2
           pm2 delete strongin30-app || true
-          NODE_ENV=production DB_NAME=strong_in_30 DB_USER=strongin30 DB_PASSWORD=${{ secrets.DB_PASSWORD }} DB_HOST=localhost DB_PORT=5432 pm2 start dist/server.js --name "strongin30-app"
+          pm2 start ecosystem.config.js
           
           # Save PM2 process list
           pm2 save
           
-          # Setup PM2 startup on boot
-          sudo env PATH=$PATH:/usr/bin /usr/local/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp /home/$USER
+          # Setup PM2 startup if not already configured
+          if [ ! -f /etc/systemd/system/pm2-$USER.service ]; then
+            pm2 startup systemd -u $USER --hp /home/$USER
+          fi
           
           echo "✅ Deployment complete!"
