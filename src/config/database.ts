@@ -46,6 +46,7 @@ const sequelize = new Sequelize({
     ? (sql: string) => logger.debug(sql) 
     : false,
   // models: [path.join(__dirname, '../models/**/*.{js,ts}')],
+   models: [path.join(__dirname, '../models')],
 });
 
 export { sequelize };

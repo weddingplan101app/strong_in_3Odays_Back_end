@@ -75,60 +75,60 @@ jobs:
           # Create or update .env file with database configuration
           # Use GitHub Secrets for sensitive values
           cat > .env << 'EOF'
-NODE_ENV=production
-PORT=3000
+          NODE_ENV=production
+          PORT=3000
 
-# Database configuration
-DB_NAME=strong_in_30
-DB_USER=strongin30
-DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-DB_HOST=localhost
-DB_PORT=5432
+          # Database configuration
+          DB_NAME=strong_in_30
+          DB_USER=strongin30
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_HOST=localhost
+          DB_PORT=5432
 
-# JWT Configuration
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-JWT_EXPIRE=30d
-JWT_COOKIE_EXPIRE=30
+          # JWT Configuration
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRE=30d
+          JWT_COOKIE_EXPIRE=30
 
-# Other environment variables
-LOG_LEVEL=info
-EOF
+          # Other environment variables
+          LOG_LEVEL=info
+          EOF
           
           # Set proper permissions for .env
           chmod 600 .env
           
           # Create/update ecosystem.config.js
           cat > ecosystem.config.js << 'EOF'
-module.exports = {
-  apps: [{
-    name: 'strongin30-app',
-    script: 'dist/server.js',
-    instances: 1,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000,
-      DB_HOST: 'localhost',
-      DB_PORT: 5432,
-      DB_NAME: 'strong_in_30',
-      DB_USER: 'strongin30',
-      DB_PASSWORD: '${{ secrets.DB_PASSWORD }}',
-      JWT_SECRET: '${{ secrets.JWT_SECRET }}',
-      JWT_EXPIRE: '30d',
-      JWT_COOKIE_EXPIRE: 30,
-      LOG_LEVEL: 'info'
-    }
-  }]
-};
-EOF
+          module.exports = {
+            apps: [{
+              name: 'strongin30-app',
+              script: 'dist/server.js',
+              instances: 1,
+              autorestart: true,
+              watch: false,
+              max_memory_restart: '1G',
+              env: {
+                NODE_ENV: 'production',
+                PORT: 3000,
+                DB_HOST: 'localhost',
+                DB_PORT: 5432,
+                DB_NAME: 'strong_in_30',
+                DB_USER: 'strongin30',
+                DB_PASSWORD: '${{ secrets.DB_PASSWORD }}',
+                JWT_SECRET: '${{ secrets.JWT_SECRET }}',
+                JWT_EXPIRE: '30d',
+                JWT_COOKIE_EXPIRE: 30,
+                LOG_LEVEL: 'info'
+              }
+            }]
+          };
+          EOF
           
           # Install dependencies
           npm ci --only=production
           
           # Build TypeScript
-          npm run build
+          npm run build -- --env=production
           
           # Run database migrations if sequelize-cli is available
           if [ -f node_modules/.bin/sequelize-cli ] || [ -f node_modules/.bin/sequelize ]; then
