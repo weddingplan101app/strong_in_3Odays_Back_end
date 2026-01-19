@@ -107,7 +107,7 @@ export class ProgramsService {
     if (category === 'equipment' && equipmentType) {
       where.equipmentType = equipmentType;
       
-      logger.debug(`Filtering equipment programs by type: ${equipmentType}`);
+      logger.debug(`Filtering equipment programs by type : ${equipmentType}`);
     }
     
     // Get programs with their first workout video
