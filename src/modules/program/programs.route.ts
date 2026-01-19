@@ -25,46 +25,46 @@ router.get('/search', (req, res) => programsController.searchPrograms(req, res))
 router.get('/', (req, res) => programsController.getAllPrograms(req, res));
 
 // Get program details - public but handles auth if present
-router.get('/:slug', (req, res) => 
-  programsController.getProgramDetails(req as AuthRequest, res)
+router.get('/:slug', (req: AuthRequest<{ slug: string }>, res) => 
+  programsController.getProgramDetails(req, res)
 );
 
 // Get workout video by day - public but handles auth if present
-router.get('/:programSlug/workout/:day', (req, res) => 
-  programsController.getWorkoutVideo(req as AuthRequest, res)
+router.get('/:programSlug/workout/:day', (req: AuthRequest<{ programSlug: string, day: string }>, res) => 
+  programsController.getWorkoutVideo(req, res)
 );
 
 // =================== PROTECTED ROUTES ===================
 // These routes require authentication
 
 // Get user program progress
-router.get('/:slug/progress', authMiddleware, (req, res) => 
-  programsController.getUserProgramProgress(req as AuthRequest, res)
+router.get('/:programSlug/progress', authMiddleware, (req: AuthRequest<{ programSlug: string }>, res) => 
+  programsController.getUserProgramProgress(req, res)
 );
 
 // Mark workout as completed
-router.post('/:slug/complete', authMiddleware, (req, res) => 
-  programsController.markWorkoutCompleted(req as AuthRequest, res)
+router.post('/:programSlug/complete', authMiddleware, (req: AuthRequest<{ programSlug: string }, any, { day: string; timeSpent: string }>, res) => 
+  programsController.markWorkoutCompleted(req, res)
 );
 
 // Rate a completed workout
-router.post('/:slug/workout/:day/rate', authMiddleware, (req, res) => 
-  programsController.rateWorkout(req as AuthRequest, res)
+router.post('/:programSlug/workout/:day/rate', authMiddleware, (req: AuthRequest<{ programSlug: string; day: string }, any, { rating: string }>, res) => 
+  programsController.rateWorkout(req, res)
 );
 
 // Get workout video sections/timestamps
-router.get('/videos/:videoId/sections', authMiddleware, (req, res) => 
-  programsController.getWorkoutVideoSections(req as AuthRequest, res)
+router.get('/videos/:videoId/sections', authMiddleware, (req: AuthRequest<{ videoId: string }>, res) => 
+  programsController.getWorkoutVideoSections(req, res)
 );
 
 // Get user's workout history
-router.get('/user/history', authMiddleware, (req, res) => 
-  programsController.getUserWorkoutHistory(req as AuthRequest, res)
+router.get('/user/history', authMiddleware, (req: AuthRequest<any, any, any, { limit?: string; offset?: string }>, res) => 
+  programsController.getUserWorkoutHistory(req, res)
 );
 
 // Get user workout statistics
-router.get('/user/statistics', authMiddleware, (req, res) => 
-  programsController.getUserStatistics(req as AuthRequest, res)
+router.get('/user/statistics', authMiddleware, (req: AuthRequest, res) => 
+  programsController.getUserStatistics(req, res)
 );
 
 export default router;
