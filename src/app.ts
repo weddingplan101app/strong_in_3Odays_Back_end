@@ -26,8 +26,9 @@ class App {
     this.env = process.env.NODE_ENV || 'development';
     this.port = process.env.PORT || 9000;
 
-    this.initializeMiddlewares();
     this.connectToDatabase()
+    this.initializeMiddlewares();
+    
     this.initializeRoutes(routes);
     this.initializeErrorHandling();
   }

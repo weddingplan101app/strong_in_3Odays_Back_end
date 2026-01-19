@@ -27,9 +27,7 @@
     router: Router;
   };
 
-  console.log('=== Creating routes ===');
-console.log('authRoute type:', typeof authRoute);
-console.log('authRoute:', authRoute)
+ 
   // Initialize application with routes``
   const routes : Route[] = [
     // new AuthRoute(),
@@ -41,11 +39,16 @@ console.log('authRoute:', authRoute)
   //   { path: '/api/v1/subscriptions', router: subscriptionRoutes },
   //   { path: '/api/admin', router: adminRoutes },
   ];
-  console.log('Routes array:dj', routes);
 
   const app = new App(routes);
 
   const server: Server = app.listen();
+
+//     console.log('Routes array:dj', routes);
+//      console.log('=== Creating routes ===');
+// console.log('authRoute type:', typeof authRoute);
+// console.log('authRoute:', authRoute)
+
 
   // Unified error handler
   const handleError = (error: Error, eventName: string) => {
