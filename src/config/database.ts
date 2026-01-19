@@ -1,5 +1,17 @@
 import { Sequelize } from 'sequelize-typescript';
 import dotenv from 'dotenv';
+import { ActivityHistory } from '../models/ActivityHistory.model';
+import { Nutrition } from '../models/Nutrition.model';
+import { ActivityLog } from '../models/ActivityLog.model';
+import { Program } from '../models/Program.model';
+import { Subscription } from '../models/Subscription.model';
+import { User } from '../models/User.model';
+import { WorkoutVideo } from '../models/WorkoutVideo.model';
+import { MediaAsset } from '../models/MediaAsset.model';
+import { VideoProcessingQueue } from '../models/VideoProcessingQueue.model';
+import { Admin } from '../models/Admin.model';
+import { AdminActivityLog } from '../models/AdminActivityLog.model';
+import { AdminInvite } from '../models/AdminInvite.model';
 dotenv.config();
 dotenv.config(); // ← must run first
 
@@ -46,7 +58,20 @@ const sequelize = new Sequelize({
     ? (sql: string) => logger.debug(sql) 
     : false,
   // models: [path.join(__dirname, '../models/**/*.{js,ts}')],
-   models: [path.join(__dirname, '../models')],
+     models: [
+    ActivityHistory,
+    Nutrition,
+    ActivityLog,
+    Program,
+    Subscription,
+    User,
+    WorkoutVideo,
+    MediaAsset,
+    VideoProcessingQueue,
+    Admin,
+    AdminActivityLog,
+    AdminInvite,
+  ],
 });
 
 export { sequelize };
