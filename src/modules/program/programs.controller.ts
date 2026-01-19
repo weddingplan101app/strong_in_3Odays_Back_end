@@ -8,7 +8,12 @@ import { ActivityHistory } from '../../models/ActivityHistory.model';
 import { ActivityLog } from '../../models/ActivityLog.model';
 
 // Define authenticated request interface based on your User model
-export interface AuthRequest extends Request {
+export interface AuthRequest<
+  Params = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any
+> extends Request<Params, ResBody, ReqBody, ReqQuery> {
   user?: {
     id: string;
     phone: string;
@@ -32,7 +37,6 @@ export interface AuthRequest extends Request {
     updatedAt: Date;
   };
 }
-
 @Service()
 export class ProgramsController {
   constructor(private programsService: ProgramsService) {}
