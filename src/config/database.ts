@@ -33,7 +33,7 @@ const dbConfig = {
   database: process.env.DB_NAME,
   username: process.env.DB_USER,
   password: 'strongin123',
-  host: '127.0.0.1',
+  host: '/var/run/postgresql',
   port: parseInt(process.env.DB_PORT || '5432'),
   dialect: 'postgres' as const,
   dialectModule: require('pg'),
