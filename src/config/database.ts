@@ -37,6 +37,26 @@ const dbConfig = {
   port: parseInt(process.env.DB_PORT || '5432'),
   dialect: 'postgres' as const,
   dialectModule: require('pg'),
+
+   retry: {
+    max: 10,                    // Retry 10 times
+    timeout: 30000,             // 30 seconds total
+    match: [
+      /ECONNREFUSED/,
+      /ETIMEDOUT/,
+      /EHOSTUNREACH/,
+      /SequelizeConnectionError/,
+    ],
+    backoffBase: 1000,          // Start with 1 second delay
+    backoffExponent: 1.5,
+  },
+  
+  // ⚡ ADD DIALECT OPTIONS FOR BETTER CONNECTION HANDLING
+  dialectOptions: {
+    connectTimeout: 10000,      // 10 second connection timeout
+    keepAlive: true,
+    keepAliveInitialDelay: 10000,
+  },
   pool: {
     max: 10,
     min: 0,
