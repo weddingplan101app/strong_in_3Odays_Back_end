@@ -22,7 +22,7 @@ console.log('DB_HOST:', process.env.DB_HOST);
 console.log('DB_PORT:', process.env.DB_PORT);
 console.log('DB_PASSWORD length:', process.env.DB_PASSWORD?.length);
 console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
-console.log('DB_PASSWORD:');
+
 import path from 'path';
 import { logger } from '../utils/logger';
 
@@ -32,8 +32,8 @@ import { logger } from '../utils/logger';
 const dbConfig = {
   database: process.env.DB_NAME,
   username: process.env.DB_USER,
-  password: 'strongin123',
-  host: '/var/run/postgresql',
+  password: process.env.DB_PASSWORD,
+  host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT || '5432'),
   dialect: 'postgres' as const,
   dialectModule: require('pg'),
