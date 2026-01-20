@@ -15,13 +15,7 @@ import { AdminInvite } from '../models/AdminInvite.model';
 dotenv.config();
 
 
-// 🔍 DEBUG — add THESE lines
-console.log('DB_NAME:', process.env.DB_NAME);
-console.log('DB_USER:', process.env.DB_USER);
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_PORT:', process.env.DB_PORT);
-console.log('DB_PASSWORD length:', process.env.DB_PASSWORD?.length);
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
+
 
 import path from 'path';
 import { logger } from '../utils/logger';
@@ -70,6 +64,14 @@ const dbConfig = {
     updatedAt: 'updated_at'
   }
 };
+
+// 🔍 DEBUG — add THESE lines
+console.log('DB_NAME:', process.env.DB_NAME);
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_PORT:', process.env.DB_PORT);
+console.log('DB_PASSWORD length:', process.env.DB_PASSWORD?.length);
+console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
 
 // Create Sequelize instance for your app
 const sequelize = new Sequelize({
