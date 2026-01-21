@@ -98,7 +98,7 @@
             chmod 600 .env
             
             # Create/update ecosystem.config.js
-            cat > ecosystem.config.js << 'EOF'
+            cat > ecosystem.config.js << EOF
             module.exports = {
               apps: [{
                 name: 'strongin30-app',
