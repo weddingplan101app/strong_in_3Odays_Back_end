@@ -3,7 +3,7 @@
   import dotenv from 'dotenv';
   import path from 'path';
 
-  dotenv.config({ path: path.resolve(__dirname, '../.env') })
+ 
   import { Router } from 'express';
   import { Server } from 'http';
   import App from './app';
@@ -11,7 +11,7 @@
   import authRoute from './modules/auth/auth.routes'
   import subscriptionRoutes from './modules/subscription/subscription.route';
   import programRoutes from './modules/program/programs.route';
-  
+  //  dotenv.config({ path: path.resolve(__dirname, '../.env') })
  
   // Import other routes as needed
 

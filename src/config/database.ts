@@ -12,7 +12,7 @@ import { VideoProcessingQueue } from '../models/VideoProcessingQueue.model';
 import { Admin } from '../models/Admin.model';
 import { AdminActivityLog } from '../models/AdminActivityLog.model';
 import { AdminInvite } from '../models/AdminInvite.model';
-dotenv.config();
+// dotenv.config();
 
 
 

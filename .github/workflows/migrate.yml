@@ -23,7 +23,7 @@ jobs:
     - name: Run migrations
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USERNAME }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
-          cd /var/www/strongin30days
+          cd /var/www/strongin30days/strong_in_3Odays_Back_end
           
           # Pull latest migrations
           git pull origin main
