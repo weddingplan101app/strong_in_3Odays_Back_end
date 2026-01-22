@@ -3,6 +3,7 @@ import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import winston, { Logger } from 'winston';
 import winstonDaily from 'winston-daily-rotate-file';
+import SlackHook from 'winston-slack-webhook-transport';
 
 // Load environment variables
 dotenv.config();
@@ -101,5 +102,15 @@ const stream = {
     logger.info(message.trim());
   },
 };
+
+if (process.env.SLACK_WEBHOOK_URL) {
+  logger.add(new SlackHook({
+    webhookUrl: process.env.SLACK_WEBHOOK_URL,
+    level: 'error', // Only notify on errors!
+    formatter: info => ({
+      text: `🚨 *Server Error Alert* 🚨\n*Message:* ${info.message}\n*Time:* ${info.timestamp}`,
+    })
+  }));
+}
 
 export { logger, stream };
