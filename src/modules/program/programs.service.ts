@@ -6,6 +6,7 @@ import { ActivityHistory } from '../../models/ActivityHistory.model';
 import { ActivityLog } from '../../models/ActivityLog.model';
 import { logger } from '../../utils/logger';
 import { VideoStreamService } from '../video/video-stream.service'; 
+import { User } from '../../models';
 
 interface SimplifiedWorkoutVideo {
   id: any;
@@ -541,6 +542,8 @@ async getWorkoutVideo(programSlug: string, day: number) {
 };
 
 activity = await ActivityHistory.create(activityData as any);
+
+await this.updateUserStreak(userId, timeSpent);
       
       logger.info(`Created new workout completion`, {
         activityId: activity.id,
@@ -596,6 +599,164 @@ activity = await ActivityHistory.create(activityData as any);
     throw error;
   }
 }
+
+// In ProgramsService - new method
+async markWorkoutStarted(userId: string, programSlug: string, day: number) {
+  try {
+    logger.info(`Marking workout as started`, { userId, programSlug, day });
+    
+    const program = await Program.findOne({
+      where: { 
+        slug: programSlug,
+        status: 'published',
+        isActive: true 
+      }
+    });
+    
+    if (!program) {
+      throw new Error('Program not found');
+    }
+    
+    const video = await WorkoutVideo.findOne({
+      where: {
+        programId: program.id,
+        day,
+        isActive: true
+      }
+    });
+    
+    if (!video) {
+      throw new Error('Workout video not found');
+    }
+    
+    // Check if activity already exists
+    const existingActivity = await ActivityHistory.findOne({
+      where: {
+        userId,
+        programId: program.id,
+        workoutVideoId: video.id,
+        day
+      }
+    });
+    
+    if (!existingActivity) {
+      // Create a new activity for video start
+      await ActivityHistory.create({
+        userId,
+        programId: program.id,
+        workoutVideoId: video.id,
+        day,
+        watchedDuration: 0,
+        isCompleted: false,
+        details: {
+          day,
+          startedAt: new Date().toISOString(),
+          status: 'started',
+          videoTitle: video.title,
+          programName: program.name
+        }
+      });
+      
+      logger.info(`Created workout start record`, {
+        userId,
+        programId: program.id,
+        videoId: video.id
+      });
+      
+      // Also log to ActivityLog for audit
+      await ActivityLog.create({
+        userId,
+        action: 'WORKOUT_STARTED',
+        entityType: 'workout_video',
+        entityId: video.id,
+        details: {
+          programSlug,
+          day,
+          videoId: video.id,
+          programId: program.id
+        }
+      });
+    } else if (!existingActivity.isCompleted) {
+      // Already started but not completed - update start time
+      await existingActivity.update({
+        details: {
+          ...existingActivity.details,
+          startedAt: new Date().toISOString(),
+          lastPlayedAt: new Date().toISOString()
+        },
+        updatedAt: new Date()
+      });
+    }
+    
+    return { 
+      success: true, 
+      message: 'Workout start tracked',
+      activity: {
+        day,
+        programSlug,
+        startedAt: new Date().toISOString()
+      }
+    };
+  } catch (error: any) {
+    logger.error(`Failed to mark workout as started`, {
+      error: error.message,
+      userId,
+      programSlug,
+      day
+    });
+    throw error;
+  }
+}
+
+
+/**
+ * Update user's daily streak
+ */
+private async updateUserStreak(userId: string, timeSpent: number) {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return;
+
+    const now = new Date();
+    const today = now.toDateString();
+    const lastWorkoutDate = user.lastWorkoutDate 
+      ? new Date(user.lastWorkoutDate).toDateString() 
+      : null;
+
+    if (lastWorkoutDate === today) {
+      // Already worked out today, don't increment streak
+      return;
+    }
+
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+
+    if (lastWorkoutDate === yesterdayStr) {
+      // Consecutive day - increment streak
+      await user.update({
+        dailyStreak: (user.dailyStreak || 0) + 1,
+        lastWorkoutDate: now,
+        totalWorkouts: (user.totalWorkouts || 0) + 1,
+        totalMinutes: (user.totalMinutes || 0) + Math.round(timeSpent / 60)
+      });
+    } else if (!lastWorkoutDate || lastWorkoutDate < yesterdayStr) {
+      // Streak broken or first workout
+      await user.update({
+        dailyStreak: 1,
+        lastWorkoutDate: now,
+        totalWorkouts: (user.totalWorkouts || 0) + 1,
+        totalMinutes: (user.totalMinutes || 0) + Math.round(timeSpent / 60)
+      });
+    }
+  } catch (error) {
+    logger.warn('Failed to update user streak', {
+      userId,
+      error: (error as Error).message
+    });
+  }
+}
+
   /**
    * Get user's progress in a program
    */

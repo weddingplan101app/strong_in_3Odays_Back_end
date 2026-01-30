@@ -16,6 +16,8 @@ import Program from './Program.model';
     tableName: 'activity_history',
     timestamps: true,
     underscored: true,
+    createdAt: 'created_at', // Explicitly map createdAt to created_at
+    updatedAt: 'updated_at', // Explicitly map updatedAt to updated_at
     indexes: [
       {
         unique: false,

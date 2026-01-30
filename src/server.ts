@@ -11,6 +11,7 @@
   import authRoute from './modules/auth/auth.routes'
   import subscriptionRoutes from './modules/subscription/subscription.route';
   import programRoutes from './modules/program/programs.route';
+  import userDashboardRoutes from './modules/users/user-dashboard.route';
   //  dotenv.config({ path: path.resolve(__dirname, '../.env') })
  
   // Import other routes as needed
@@ -35,6 +36,7 @@
    { path: '/api/auth', router: authRoute },
    { path: '/api/subscription', router: subscriptionRoutes },
    { path: '/api/program', router: programRoutes },
+   { path: '/api/user/dashboard', router: userDashboardRoutes },
   //    { path: '/api/v1/workouts', router: workoutRoutes },
   //   { path: '/api/v1/subscriptions', router: subscriptionRoutes },
   //   { path: '/api/admin', router: adminRoutes },

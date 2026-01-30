@@ -224,9 +224,52 @@ videoUrl!: string | null;
   sortOrder!: number;
 
   @Column({
-    type: DataType.ARRAY(DataType.STRING),
-    defaultValue: [],
-    field: 'muscle_groups'
+    type: DataType.JSONB,
+    allowNull: true,
+    field: 'muscle_groups',
+    get() {
+      // Custom getter to ensure we always return an array
+      const rawValue = this.getDataValue('muscleGroups') as any;
+      
+      if (!rawValue) return [];
+      
+      if (Array.isArray(rawValue)) {
+        return rawValue.map(item => item?.toString().trim()).filter(Boolean);
+      }
+      
+      if (typeof rawValue === 'string') {
+        try {
+          const parsed = JSON.parse(rawValue);
+          if (Array.isArray(parsed)) {
+            return parsed.map(item => item?.toString().trim()).filter(Boolean);
+          }
+        } catch {
+          return rawValue
+            .split(',')
+            .map((item: string) => item.trim())
+            .filter(Boolean);
+        }
+      }
+      
+      return [];
+    },
+    set(value: any) {
+      // Custom setter to store as JSONB array
+      if (Array.isArray(value)) {
+        this.setDataValue('muscleGroups', value);
+      } else if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          this.setDataValue('muscleGroups', parsed);
+        } catch {
+          this.setDataValue('muscleGroups', [value]);
+        }
+      } else if (value) {
+        this.setDataValue('muscleGroups', [value]);
+      } else {
+        this.setDataValue('muscleGroups', []);
+      }
+    }
   })
   muscleGroups!: string[];
 

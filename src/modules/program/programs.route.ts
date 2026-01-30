@@ -42,6 +42,11 @@ router.get('/:programSlug/progress', authMiddleware, (req: AuthRequest<{ program
   programsController.getUserProgramProgress(req, res)
 );
 
+router.post('/:programSlug/start', authMiddleware, (req: AuthRequest<{ programSlug: string }, any, { day: string }>, res) => 
+  programsController.markWorkoutStarted(req, res)
+);
+
+
 // Mark workout as completed
 router.post('/:programSlug/complete', authMiddleware, (req: AuthRequest<{ programSlug: string }, any, { day: string; timeSpent: string }>, res) => 
   programsController.markWorkoutCompleted(req, res)

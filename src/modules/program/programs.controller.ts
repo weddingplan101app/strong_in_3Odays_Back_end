@@ -277,6 +277,64 @@ export class ProgramsController {
     }
   }
 
+  // In your controller
+async markWorkoutStarted(req: AuthRequest, res: Response) {
+  try {
+    const { programSlug } = req.params;
+    const { day } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Authentication required' 
+      });
+    }
+
+    if (!programSlug || !day) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields: programSlug, day' 
+      });
+    }
+
+    const dayNumber = parseInt(day, 10);
+    if (isNaN(dayNumber) || dayNumber < 1 || dayNumber > 30) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Day must be a number between 1 and 30' 
+      });
+    }
+
+    logger.info('Controller: Marking workout as started', { 
+      userId, 
+      programSlug, 
+      day: dayNumber 
+    });
+
+    const data = await this.programsService.markWorkoutStarted(
+      userId, 
+      programSlug, 
+      dayNumber
+    );
+    
+    res.status(200).json({ success: true, data });
+  } catch (error: any) {
+    logger.error('Controller: Failed to mark workout as started', { 
+      error: error.message, 
+      userId: req.user?.id, 
+      programSlug: req.params.programSlug, 
+      body: req.body 
+    });
+    
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    res.status(statusCode).json({ 
+      success: false, 
+      error: error.message || 'Failed to mark workout as started' 
+    });
+  }
+}
+
   /**
    * Get user program progress (Protected - requires authentication)
    */
