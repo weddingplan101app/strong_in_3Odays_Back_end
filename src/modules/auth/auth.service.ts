@@ -72,7 +72,7 @@ export class AuthService {
     
     // Check if user has active subscription
     if (!subscriptionStatus.isActive) {
-      throw new ForbiddenException('No active subscription found. Please subscribe first.');
+      throw new ForbiddenException('No active subscription found. Please subscribe first .');
     }
 
     // Update metadata with login info
