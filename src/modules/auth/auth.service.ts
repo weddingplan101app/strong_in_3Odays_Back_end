@@ -64,7 +64,7 @@ export class AuthService {
 
     // If user doesn't exist, throw error
     if (!user) {
-      throw new NotFoundException('User not found. Please subscribe first.');
+      throw new NotFoundException('User not found. Please subscribe first .');
     }
 
     // Check subscription status using the model's method
