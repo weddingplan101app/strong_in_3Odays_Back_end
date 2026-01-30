@@ -33,6 +33,9 @@ export interface AuthRequest<
     created_at: Date;
     updated_at: Date;
   };
+   body: ReqBody;
+  
+  query: ReqQuery;
 }
 
 @Service()
