@@ -117,6 +117,8 @@
                   DB_PASSWORD: '${{ secrets.DB_PASSWORD }}',
                   JWT_SECRET: '${{ secrets.JWT_SECRET }}',
                   JWT_EXPIRE: '30d',
+                  JWT_EXPIRES_IN: '1d',
+                  JWT_REFRESH_EXPIRES_IN: '30d',
                   JWT_COOKIE_EXPIRE: 30,
                   LOG_LEVEL: 'info'
                 }
