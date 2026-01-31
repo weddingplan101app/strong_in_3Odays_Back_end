@@ -85,6 +85,13 @@
             DB_HOST=localhost
             DB_PORT=5432
 
+            DO_SPACES_BUCKET=${{ secrets.DO_SPACES_BUCKET }}
+            DO_SPACES_ACCESS_KEY=${{ secrets.DO_SPACES_ACCESS_KEY }}
+            DO_SPACES_SECRET_KEY=${{ secrets.DO_SPACES_SECRET_KEY }}
+            DO_SPACES_REGION=${{ secrets.DO_SPACES_REGION }}
+            DO_SPACES_CDN_URL=${{ secrets.DO_SPACES_CDN_URL }}
+            SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+
             # JWT Configuration
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
@@ -119,6 +126,12 @@
                   DB_NAME: 'strong_in_30',
                   DB_USER: 'strongin30',
                   DB_PASSWORD: '${{ secrets.DB_PASSWORD }}',
+                  DO_SPACES_BUCKET: '${{ secrets.DO_SPACES_BUCKET }}',
+                  DO_SPACES_SECRET_KEY: '${{ secrets.DO_SPACES_SECRET_KEY }}',
+                  DO_SPACES_ACCESS_KEY: '${{ secrets.DO_SPACES_ACCESS_KEY }}',
+                  DO_SPACES_REGION: '${{ secrets.DO_SPACES_REGION }}',
+                  DO_SPACES_CDN_URL: '${{ secrets.DO_SPACES_CDN_URL }}',
+                  SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_URL }}',
                   JWT_SECRET: '${{ secrets.JWT_SECRET }}',
                   JWT_REFRESH_SECRET: '${{ secrets.JWT_REFRESH_SECRET }}',
                   JWT_EXPIRE: '30d',
