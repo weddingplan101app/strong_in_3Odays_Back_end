@@ -384,8 +384,8 @@ async getWorkoutVideo(programSlug: string, day: number) {
           description: video.description,
           duration: video.duration,
           durationFormatted: this.formatDuration(video.duration),
-          videoUrl: signedVideoUrl, // ✅ Use signed URL
-          thumbnailUrl: thumbnailUrl, // ✅ Use public URL
+          videoUrl: signedVideoUrl,
+          thumbnailUrl: thumbnailUrl, 
           views: video.views || 0,
           difficulty: video.difficulty,
           caloriesBurned: video.caloriesBurned,
@@ -393,7 +393,6 @@ async getWorkoutVideo(programSlug: string, day: number) {
           hasAdaptiveStreaming: video.hasAdaptiveStreaming,
           streamingManifestKey: video.streamingManifestKey,
           isWelcomeVideo: video.isWelcomeVideo,
-          // Keep original keys for reference
           videoKey: video.videoKey,
           thumbnailKey: video.thumbnailKey,
           expiresIn: 3600 // 1 hour in seconds
@@ -455,7 +454,7 @@ async getWorkoutVideo(programSlug: string, day: number) {
    * Mark workout as completed
    */
 
-  async markWorkoutCompleted(userId: string, programSlug: string, day: number, timeSpent: number) {
+async markWorkoutCompleted(userId: string, programSlug: string, day: number, timeSpent: number) {
   try {
     logger.info(`Marking workout as completed`, {
       userId,
@@ -490,62 +489,78 @@ async getWorkoutVideo(programSlug: string, day: number) {
       throw new Error('Workout video not found');
     }
     
-    // Check if already completed - use isCompleted: true instead of action
+    // 🔴 FIXED: Look for ANY activity (completed OR started) for this user/video/day
     const existingActivity = await ActivityHistory.findOne({
       where: {
         userId,
         programId: program.id,
         workoutVideoId: video.id,
-        day: day,
-        isCompleted: true // Use the actual field name from your model
+        day: day
+        // REMOVED: isCompleted: true - Now looks for ANY activity
       }
     });
     
     let activity;
+    let isNewCompletion = false;
     
     if (existingActivity) {
-      // Update existing
+      // 🔴 FIXED: Check if this is a new completion (wasn't already completed)
+      if (!existingActivity.isCompleted) {
+        isNewCompletion = true;
+        logger.info(`Marking started activity as completed`, {
+          activityId: existingActivity.id,
+          userId,
+          programId: program.id,
+          videoId: video.id
+        });
+      }
+      
+      // Update existing activity
       activity = await existingActivity.update({
         watchedDuration: (existingActivity.watchedDuration || 0) + timeSpent,
+        isCompleted: true, // Mark as completed
+        completedAt: new Date(),
         details: {
           ...existingActivity.details,
           timeSpent: ((existingActivity.details as any)?.timeSpent || 0) + timeSpent,
-          completedAt: new Date().toISOString()
+          completedAt: new Date().toISOString(),
+          status: 'completed'
         },
-        completedAt: new Date(),
         updatedAt: new Date()
       });
       
-      logger.info(`Updated existing workout completion`, {
+      logger.info(`Updated existing workout activity`, {
         activityId: activity.id,
         userId,
         programId: program.id,
-        videoId: video.id
+        videoId: video.id,
+        wasCompleted: existingActivity.isCompleted,
+        isNewCompletion
       });
     } else {
-      // Create new activity - REMOVE action, entityType, entityId
-     const activityData = {
-  userId,
-  programId: program.id,
-  workoutVideoId: video.id,
-  day,
-  watchedDuration: timeSpent,
-  isCompleted: true,
-  completedAt: new Date(),
-  details: {
-    day,
-    timeSpent,
-    completedAt: new Date().toISOString(),
-    programName: program.name,
-    videoTitle: video.title
-  }
-};
-
-activity = await ActivityHistory.create(activityData as any);
-
-await this.updateUserStreak(userId, timeSpent);
+      // 🔴 This should rarely happen - only if user somehow completes without starting
+      isNewCompletion = true;
       
-      logger.info(`Created new workout completion`, {
+      const activityData = {
+        userId,
+        programId: program.id,
+        workoutVideoId: video.id,
+        day,
+        watchedDuration: timeSpent,
+        isCompleted: true,
+        completedAt: new Date(),
+        details: {
+          day,
+          timeSpent,
+          completedAt: new Date().toISOString(),
+          programName: program.name,
+          videoTitle: video.title
+        }
+      };
+
+      activity = await ActivityHistory.create(activityData as any);
+      
+      logger.warn(`Created new workout completion without start record`, {
         activityId: activity.id,
         userId,
         programId: program.id,
@@ -553,7 +568,15 @@ await this.updateUserStreak(userId, timeSpent);
       });
     }
     
-    // Also log to ActivityLog for audit trail - KEEP action here
+    // 🔴 FIXED: Only update streak and user stats for NEW completions
+    if (isNewCompletion) {
+      await this.updateUserStreak(userId, timeSpent);
+      
+      // Also update user's total workouts and minutes
+      await this.updateUserStats(userId, timeSpent);
+    }
+    
+    // Also log to ActivityLog for audit trail
     await ActivityLog.create({
       userId,
       action: 'WORKOUT_COMPLETED',
@@ -564,7 +587,9 @@ await this.updateUserStreak(userId, timeSpent);
         day,
         timeSpent,
         videoId: video.id,
-        programId: program.id
+        programId: program.id,
+        isNewCompletion,
+        activityId: activity.id
       }
     });
     
@@ -581,6 +606,7 @@ await this.updateUserStreak(userId, timeSpent);
       success: true,
       completed: true,
       activityId: activity.id,
+      isNewCompletion, // Include this in response
       nextVideo: nextVideo ? {
         day: nextVideo.day,
         title: nextVideo.title,
@@ -597,6 +623,31 @@ await this.updateUserStreak(userId, timeSpent);
       timeSpent
     });
     throw error;
+  }
+}
+
+
+private async updateUserStats(userId: string, timeSpent: number): Promise<void> {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return;
+
+    await user.update({
+      totalWorkouts: (user.totalWorkouts || 0) + 1,
+      totalMinutes: (user.totalMinutes || 0) + Math.round(timeSpent / 60),
+      updatedAt: new Date()
+    });
+
+    logger.info('User stats updated', {
+      userId,
+      totalWorkouts: user.totalWorkouts,
+      totalMinutes: user.totalMinutes
+    });
+  } catch (error) {
+    logger.error('Failed to update user stats', {
+      userId,
+      error: (error as Error).message
+    });
   }
 }
 
@@ -629,7 +680,7 @@ async markWorkoutStarted(userId: string, programSlug: string, day: number) {
       throw new Error('Workout video not found');
     }
     
-    // Check if activity already exists
+    // 🔴 FIXED: Check if activity already exists (completed OR started)
     const existingActivity = await ActivityHistory.findOne({
       where: {
         userId,
@@ -639,9 +690,11 @@ async markWorkoutStarted(userId: string, programSlug: string, day: number) {
       }
     });
     
+    let activity;
+    
     if (!existingActivity) {
       // Create a new activity for video start
-      await ActivityHistory.create({
+      activity = await ActivityHistory.create({
         userId,
         programId: program.id,
         workoutVideoId: video.id,
@@ -653,32 +706,20 @@ async markWorkoutStarted(userId: string, programSlug: string, day: number) {
           startedAt: new Date().toISOString(),
           status: 'started',
           videoTitle: video.title,
-          programName: program.name
+          programName: program.name,
+          lastPlayedAt: new Date().toISOString()
         }
       });
       
       logger.info(`Created workout start record`, {
+        activityId: activity.id,
         userId,
         programId: program.id,
         videoId: video.id
       });
-      
-      // Also log to ActivityLog for audit
-      await ActivityLog.create({
-        userId,
-        action: 'WORKOUT_STARTED',
-        entityType: 'workout_video',
-        entityId: video.id,
-        details: {
-          programSlug,
-          day,
-          videoId: video.id,
-          programId: program.id
-        }
-      });
     } else if (!existingActivity.isCompleted) {
       // Already started but not completed - update start time
-      await existingActivity.update({
+      activity = await existingActivity.update({
         details: {
           ...existingActivity.details,
           startedAt: new Date().toISOString(),
@@ -686,7 +727,47 @@ async markWorkoutStarted(userId: string, programSlug: string, day: number) {
         },
         updatedAt: new Date()
       });
+      
+      logger.info(`Updated existing started activity`, {
+        activityId: activity.id,
+        userId,
+        programId: program.id,
+        videoId: video.id
+      });
+    } else {
+      // Activity already completed - don't update, just return info
+      logger.info(`Workout already completed, not updating start time`, {
+        activityId: existingActivity.id,
+        userId,
+        programId: program.id,
+        videoId: video.id
+      });
+      
+      return { 
+        success: true, 
+        message: 'Workout already completed',
+        alreadyCompleted: true,
+        activity: {
+          day,
+          programSlug,
+          completedAt: existingActivity.completedAt
+        }
+      };
     }
+    
+    // Also log to ActivityLog for audit
+    await ActivityLog.create({
+      userId,
+      action: 'WORKOUT_STARTED',
+      entityType: 'workout_video',
+      entityId: video.id,
+      details: {
+        programSlug,
+        day,
+        videoId: video.id,
+        programId: program.id
+      }
+    });
     
     return { 
       success: true, 
@@ -694,7 +775,8 @@ async markWorkoutStarted(userId: string, programSlug: string, day: number) {
       activity: {
         day,
         programSlug,
-        startedAt: new Date().toISOString()
+        startedAt: new Date().toISOString(),
+        activityId: activity?.id
       }
     };
   } catch (error: any) {
@@ -707,7 +789,6 @@ async markWorkoutStarted(userId: string, programSlug: string, day: number) {
     throw error;
   }
 }
-
 
 /**
  * Update user's daily streak

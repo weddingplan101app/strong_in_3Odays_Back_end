@@ -184,34 +184,38 @@ async getUserDashboard(userId: string) {
         totalMinutes: user.totalMinutes || 0
       },
       stats: {
-        daysCompleted: {
-          current: metrics.completedDays,
-          total: 30, // Default program duration
-          change: metrics.weeklyChangeDays,
-          label: 'Days Completed',
-          description: `${metrics.completedDays} of 30 days`,
-          trend: metrics.weeklyChangeDays >= 0 ? 'up' : 'down'
-        },
-        minutesTrained: {
-          current: metrics.minutesThisMonth,
-          change: metrics.weeklyChangeMinutes,
-          label: 'Minutes Trained',
-          description: `${metrics.minutesThisMonth} this month`,
-          trend: metrics.weeklyChangeMinutes >= 0 ? 'up' : 'down'
-        },
-        videosWatched: {
-          current: metrics.totalVideos,
-          label: 'Videos Watched',
-          description: `${metrics.totalVideos} total videos`,
-          trend: 'neutral'
-        },
-        currentStreak: {
-          current: user.dailyStreak || 0,
-          label: 'Current Streak',
-          description: `${user.dailyStreak || 0} days in a row`,
-          encouragement: this.getStreakEncouragement(user.dailyStreak || 0)
-        }
-      },
+              daysCompleted: {
+    current: metrics.completedDays,  // Changed from completedDays
+    total: 30,
+    change: metrics.weeklyChangeDays,
+    label: 'Days Completed',
+    description: `${metrics.completedDays} of 30 program days completed`,
+    trend: metrics.weeklyChangeDays >= 0 ? 'up' : 'down'
+  },
+
+            minutesTrained: {
+              current: metrics.minutesThisMonth,
+              change: metrics.weeklyChangeMinutes,
+              label: 'Minutes Trained',
+              description: `${metrics.minutesThisMonth} minutes this month`,
+              trend: metrics.weeklyChangeMinutes >= 0 ? 'up' : 'down'
+            },
+            videosWatched: {
+              current: metrics.totalVideos,
+              started: metrics.totalStarted,
+              completed: metrics.totalCompleted,
+              completionRate: metrics.completionRate,
+              label: 'Workouts',
+              description: `${metrics.totalCompleted} completed of ${metrics.totalStarted} started`,
+              trend: 'neutral'
+            },
+            currentStreak: {
+              current: user.dailyStreak || 0,
+              label: 'Current Streak',
+              description: `${user.dailyStreak || 0} days in a row`,
+              encouragement: this.getStreakEncouragement(user.dailyStreak || 0)
+            }
+          },
       currentProgram: currentProgram ? {
         id: currentProgram.program.id,
         name: currentProgram.program.name,
@@ -700,54 +704,75 @@ public async getCurrentProgram(userId: string) {
   /**
    * Calculate all dashboard metrics
    */
-  private calculateDashboardMetrics(
-    user: User,
-    activityHistory: ActivityHistory[],
-    recentActivity: ActivityHistory[],
-    weeklyProgress: any
-  ) {
-    // Calculate unique days with completed workouts
-    const uniqueDaysSet = new Set(
-      activityHistory
-        .filter(a => a.completedAt)
-        .map(a => {
-          const date = new Date(a.completedAt!);
-          return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-        })
-    );
 
-    const completedDays = uniqueDaysSet.size;
+private calculateDashboardMetrics(
+  user: User,
+  activityHistory: ActivityHistory[],
+  recentActivity: ActivityHistory[],
+  weeklyProgress: any
+) {
+  // Separate completed and started activities
+  const completedActivities = activityHistory.filter(a => a.isCompleted);
+  const startedActivities = activityHistory.filter(a => !a.isCompleted);
+  
+  // ✅ FIXED: Calculate UNIQUE PROGRAM DAYS completed (not calendar days)
+  const uniqueCompletedProgramDaysSet = new Set(
+    completedActivities.map(a => a.day)
+  );
 
-    // Calculate minutes trained this month
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    const thisMonthActivities = activityHistory.filter(a => 
-      a.completedAt && new Date(a.completedAt) >= startOfMonth
-    );
-    
-    const minutesThisMonth = Math.round(
-      thisMonthActivities.reduce((sum, a) => sum + (a.watchedDuration || 0), 0) / 60
-    );
+  const completedDays = uniqueCompletedProgramDaysSet.size;
 
-    // Calculate weekly change in days (from weeklyProgress)
-    const weeklyChangeDays = weeklyProgress?.thisWeekCount || 0;
+  // Calculate minutes trained this month (from COMPLETED activities only)
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  
+  const thisMonthCompleted = completedActivities.filter(a => 
+    a.completedAt && new Date(a.completedAt) >= startOfMonth
+  );
+  
+  const minutesThisMonth = Math.round(
+    thisMonthCompleted.reduce((sum, a) => sum + (a.watchedDuration || 0), 0) / 60
+  );
 
-    // Calculate weekly change in minutes
-    const weeklyChangeMinutes = 12; // Mock for now - would calculate from last week
+  // Calculate weekly change in days (from weeklyProgress)
+  const weeklyChangeDays = weeklyProgress?.thisWeekCount || 0;
 
-    // Total videos watched
-    const totalVideos = activityHistory.length;
+  // Calculate weekly change in minutes
+  const weeklyChangeMinutes = weeklyProgress?.changeMinutes || 0;
 
-    return {
-      completedDays,
-      minutesThisMonth,
-      weeklyChangeDays,
-      weeklyChangeMinutes,
-      totalVideos
-    };
-  }
+  // Total videos watched (BOTH started and completed)
+  const totalVideos = activityHistory.length;
 
+  // New metrics for better insights
+  const completionRate = activityHistory.length > 0 
+    ? Math.round((completedActivities.length / activityHistory.length) * 100)
+    : 0;
+
+  // ✅ DEBUG: Add logging to understand what's happening
+  console.log('=== METRICS DEBUG ===');
+  console.log('Total activities:', activityHistory.length);
+  console.log('Completed activities:', completedActivities.length);
+  console.log('Unique completed days (program days):', completedDays);
+  console.log('Completed days array:', Array.from(uniqueCompletedProgramDaysSet));
+  console.log('Completed activities details:', completedActivities.map(a => ({
+    id: a.id,
+    day: a.day,
+    completedAt: a.completedAt,
+    isCompleted: a.isCompleted
+  })));
+  console.log('=== END DEBUG ===');
+
+  return {
+    completedDays,          // ✅ Now counts unique PROGRAM days completed
+    minutesThisMonth,       // Minutes trained this month
+    weeklyChangeDays,       // Change in completed days this week
+    weeklyChangeMinutes,    // Change in minutes this week
+    totalVideos,            // Total activities (started + completed)
+    completionRate,         // Percentage of started activities that are completed
+    totalStarted: startedActivities.length,
+    totalCompleted: completedActivities.length
+  };
+}
   /**
    * Get weekly progress data
    */
