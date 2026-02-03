@@ -85,9 +85,9 @@ export class AnalyticsService {
   private async getWeeklyStats(userId: string) {
     const startOfWeek = this.getStartDateForPeriod('week');
     const startOfLastWeek = new Date(startOfWeek);
-    console.log("Start of week:", startOfWeek);
+    
     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
-    console.log("Start of last week:", startOfLastWeek);
+    
 
     // Get ALL completed activities (both program workouts and targeted workouts)
     const thisWeekActivities = await ActivityHistory.findAll({
@@ -112,7 +112,7 @@ export class AnalyticsService {
       ]
     });
 
-    console.log("This week activities:", thisWeekActivities)
+  
 
     // Get last week's activities for comparison
     const lastWeekActivities = await ActivityHistory.findAll({
