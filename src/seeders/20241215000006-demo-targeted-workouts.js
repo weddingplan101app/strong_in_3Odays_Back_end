@@ -2,8 +2,66 @@
 'use strict';
 const { v4: uuidv4 } = require('uuid');
 
+// Reuse the same cover images from programs seeder
+const uploadedCovers = [
+  'cover/plus-size-person-working-out.jpg',
+  'cover/portrait-athletic-man-doing-box-jump-exercise-crossfit-sport-healt.jpg',
+  'cover/handsome-black-man-is-engaged-gym.jpg',
+  'cover/athletic-man-practicing-gymnastics-keep-fit.jpg',
+  'cover/full-shot-man-doing-exercise-gym.jpg',
+  'cover/side-view-man-training-with-dumbbells.jpg',
+  'cover/handsome-black-man-is-engaged-gym.jpg',
+  'cover/beautiful-black-girl-is-engaged-gym.jpg',
+  'cover/full-shot-woman-training-outdoors.jpg',
+  'cover/full-shot-man-training-outdoors.jpg',
+  'cover/side-view-athlete-holding-weights-with-copy-space.jpg'
+];
+
+// Categorize covers by gender/focus
+const coverCategories = {
+  male: [
+    'cover/handsome-black-man-is-engaged-gym.jpg',
+    'cover/full-shot-man-training-outdoors.jpg',
+    'cover/full-shot-man-doing-exercise-gym.jpg',
+    'cover/side-view-man-training-with-dumbbells.jpg',
+    'cover/portrait-athletic-man-doing-box-jump-exercise-crossfit-sport-healt.jpg',
+    'cover/athletic-man-practicing-gymnastics-keep-fit.jpg'
+  ],
+  female: [
+    'cover/beautiful-black-girl-is-engaged-gym.jpg',
+    'cover/full-shot-woman-training-outdoors.jpg',
+    'cover/plus-size-person-working-out.jpg'
+  ],
+  both: [
+    'cover/side-view-athlete-holding-weights-with-copy-space.jpg'
+  ]
+};
+
 module.exports = {
   async up(queryInterface, Sequelize) {
+    // Helper function to get appropriate cover for targeted workout
+    function getCoverForTargetedWorkout(genderTarget, bodyPart, sortOrder) {
+      let coverPool = [];
+      
+      // Choose cover pool based on gender target
+      if (genderTarget === 'male') {
+        coverPool = coverCategories.male;
+      } else if (genderTarget === 'female') {
+        coverPool = coverCategories.female;
+      } else {
+        coverPool = coverCategories.both;
+      }
+      
+      // If no suitable covers found, use all covers
+      if (coverPool.length === 0) {
+        coverPool = uploadedCovers;
+      }
+      
+      // Use deterministic index based on sortOrder
+      const coverIndex = sortOrder % coverPool.length;
+      return coverPool[coverIndex];
+    }
+    
     // Create targeted workouts based on PRD requirements (3-5 minute workouts)
     const targetedWorkouts = [
       // ========== WOMEN'S WORKOUTS (PRD Focus: Belly fat, toning, curves) ==========
@@ -18,7 +76,8 @@ module.exports = {
         difficulty: 'beginner',
         calories_burned: 50,
         clip_count: 10,
-        thumbnail_key: 'targeted/women/belly-fat.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('female', 'abs', 1),
         equipment_required: false,
         focus_areas: ['lower abs', 'obliques', 'core'],
         tags: ['belly fat', 'abs', 'core', 'women', 'quick'],
@@ -40,7 +99,8 @@ module.exports = {
         difficulty: 'beginner',
         calories_burned: 30,
         clip_count: 6,
-        thumbnail_key: 'targeted/women/arm-toning.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('female', 'arms', 2),
         equipment_required: false,
         focus_areas: ['biceps', 'triceps', 'toning'],
         tags: ['arms', 'toning', 'women', 'no equipment'],
@@ -62,7 +122,8 @@ module.exports = {
         difficulty: 'beginner',
         calories_burned: 45,
         clip_count: 8,
-        thumbnail_key: 'targeted/women/glute-sculptor.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('female', 'glutes', 3),
         equipment_required: false,
         focus_areas: ['glutes', 'thighs', 'curves'],
         tags: ['glutes', 'legs', 'curves', 'women', 'toning'],
@@ -84,7 +145,8 @@ module.exports = {
         difficulty: 'intermediate',
         calories_burned: 55,
         clip_count: 10,
-        thumbnail_key: 'targeted/women/full-body-toning.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('female', 'full_body', 4),
         equipment_required: false,
         focus_areas: ['total body', 'toning', 'lean muscle'],
         tags: ['full body', 'toning', 'women', 'complete'],
@@ -108,7 +170,8 @@ module.exports = {
         difficulty: 'intermediate',
         calories_burned: 40,
         clip_count: 6,
-        thumbnail_key: 'targeted/men/chest-builder.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('male', 'chest', 5),
         equipment_required: false,
         focus_areas: ['chest', 'pectorals', 'strength'],
         tags: ['chest', 'pushups', 'strength', 'men'],
@@ -130,7 +193,8 @@ module.exports = {
         difficulty: 'intermediate',
         calories_burned: 50,
         clip_count: 8,
-        thumbnail_key: 'targeted/men/arm-strength.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('male', 'arms', 6),
         equipment_required: false,
         focus_areas: ['biceps', 'triceps', 'forearms'],
         tags: ['arms', 'biceps', 'triceps', 'strength', 'men'],
@@ -152,7 +216,8 @@ module.exports = {
         difficulty: 'intermediate',
         calories_burned: 60,
         clip_count: 10,
-        thumbnail_key: 'targeted/men/fat-burn.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('male', 'full_body', 7),
         equipment_required: false,
         focus_areas: ['fat burning', 'cardio', 'metabolism'],
         tags: ['fat loss', 'cardio', 'hiit', 'men', 'burn'],
@@ -174,7 +239,8 @@ module.exports = {
         difficulty: 'advanced',
         calories_burned: 55,
         clip_count: 8,
-        thumbnail_key: 'targeted/men/dumbbell-arms.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('male', 'arms', 8),
         equipment_required: true,
         focus_areas: ['bicep growth', 'tricep definition'],
         tags: ['dumbbell', 'weights', 'advanced', 'men', 'gym'],
@@ -198,7 +264,8 @@ module.exports = {
         difficulty: 'beginner',
         calories_burned: 45,
         clip_count: 6,
-        thumbnail_key: 'targeted/both/cardio-blast.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('both', 'full_body', 9),
         equipment_required: false,
         focus_areas: ['cardiovascular', 'endurance'],
         tags: ['cardio', 'hiit', 'quick', 'energy', 'fat burn'],
@@ -220,7 +287,8 @@ module.exports = {
         difficulty: 'intermediate',
         calories_burned: 40,
         clip_count: 8,
-        thumbnail_key: 'targeted/both/core-strength.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('both', 'abs', 10),
         equipment_required: false,
         focus_areas: ['core stability', 'abs', 'posture'],
         tags: ['core', 'abs', 'stability', 'posture'],
@@ -242,7 +310,8 @@ module.exports = {
         difficulty: 'beginner',
         calories_burned: 25,
         clip_count: 6,
-        thumbnail_key: 'targeted/both/office-relief.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('both', 'full_body', 11),
         equipment_required: false,
         focus_areas: ['mobility', 'posture', 'back pain'],
         tags: ['office', 'desk job', 'posture', 'mobility', 'relief'],
@@ -264,7 +333,8 @@ module.exports = {
         difficulty: 'beginner',
         calories_burned: 35,
         clip_count: 8,
-        thumbnail_key: 'targeted/both/morning-energy.jpg',
+        // ✅ Using Digital Ocean cover from programs
+        thumbnail_key: getCoverForTargetedWorkout('both', 'full_body', 12),
         equipment_required: false,
         focus_areas: ['energy', 'mood', 'metabolism'],
         tags: ['morning', 'energy', 'wake up', 'quick'],
@@ -288,6 +358,27 @@ module.exports = {
     // Show duration summary
     const totalMinutes = targetedWorkouts.reduce((sum, w) => sum + w.total_duration, 0) / 60;
     console.log(`   Total video content: ${totalMinutes.toFixed(1)} minutes`);
+    
+    // Show Digital Ocean cover usage
+    console.log('\n🌊 Digital Ocean Cover Images Used for Targeted Workouts:');
+    console.log(`   Total cover images available: ${uploadedCovers.length}`);
+    console.log(`   Men-focused covers: ${coverCategories.male.length}`);
+    console.log(`   Women-focused covers: ${coverCategories.female.length}`);
+    console.log(`   Neutral covers: ${coverCategories.both.length}`);
+    
+    console.log('\n🎯 Targeted Workout Thumbnails (Using Same Assets as Programs):');
+    console.log('   Sample targeted workout thumbnails:');
+    targetedWorkouts.slice(0, 4).forEach(workout => {
+      console.log(`     ${workout.title}: ${workout.thumbnail_key}`);
+    });
+    
+    console.log('\n🔗 Sample Digital Ocean URLs:');
+    targetedWorkouts.slice(0, 3).forEach(workout => {
+      console.log(`   ${workout.title}: https://my-fitness-app.fra1.digitaloceanspaces.com/${workout.thumbnail_key}`);
+    });
+    
+    console.log('\n💡 NOTE: Targeted workouts are using the SAME cover images as the main programs.');
+    console.log('   This ensures consistency and reuses existing Digital Ocean Spaces content.');
   },
 
   async down(queryInterface, Sequelize) {

@@ -37,7 +37,7 @@ export interface AuthRequest<
     updatedAt: Date;
   };
 
-  // ✅ Add these lines
+
   params: Params;
   body: ReqBody;
   query: ReqQuery;

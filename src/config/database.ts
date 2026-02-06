@@ -12,6 +12,8 @@ import { VideoProcessingQueue } from '../models/VideoProcessingQueue.model';
 import { Admin } from '../models/Admin.model';
 import { AdminActivityLog } from '../models/AdminActivityLog.model';
 import { AdminInvite } from '../models/AdminInvite.model';
+import { TargetedWorkout } from '../models/TargetedWorkout.model';
+import { TargetedWorkoutClip } from '../models/TargetedWorkoutClip.model';
 // dotenv.config();
 
 
@@ -93,6 +95,8 @@ const sequelize = new Sequelize({
     Admin,
     AdminActivityLog,
     AdminInvite,
+    TargetedWorkout,
+    TargetedWorkoutClip,
   ],
 });
 

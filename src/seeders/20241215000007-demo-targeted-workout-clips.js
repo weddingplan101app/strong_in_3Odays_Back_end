@@ -2,6 +2,45 @@
 'use strict';
 const { v4: uuidv4 } = require('uuid');
 
+// Reuse the same assets from programs and workout videos
+const uploadedVideos = [
+  'video/5114742_Running_Runner_3840x2160.mp4',
+  'video/6003946_Man_Woman_3840x2160.mp4', 
+  'video/Q_Woman_Fitness_2160x3840.mp4',
+  'video/6003937_Man_Woman_3840x2160.mp4',
+  'video/393687_Fitness_Gym_2048x1080.mp4',
+  'video/4783798_Woman_Gym_1920x1080.mp4',
+  'video/4783840_Woman_Gym_3840x2160.mp4',
+  'video/6003962_Man_African_American_3840x2160.mp4'
+];
+
+const uploadedThumbnails = [
+  'thumbnail/thum1.jpg',
+  'thumbnail/thum2.jpg',
+  'thumbnail/thum3.jpg',
+  'thumbnail/thum4.jpg',
+  'thumbnail/thum5.jpg',
+  'thumbnail/thum6.jpg'
+];
+
+// Categorize videos based on content for better matching
+const videoCategories = {
+  male: [
+    'video/5114742_Running_Runner_3840x2160.mp4',
+    'video/6003962_Man_African_American_3840x2160.mp4'
+  ],
+  female: [
+    'video/Q_Woman_Fitness_2160x3840.mp4',
+    'video/4783798_Woman_Gym_1920x1080.mp4',
+    'video/4783840_Woman_Gym_3840x2160.mp4'
+  ],
+  both: [
+    'video/6003946_Man_Woman_3840x2160.mp4',
+    'video/6003937_Man_Woman_3840x2160.mp4',
+    'video/393687_Fitness_Gym_2048x1080.mp4'
+  ]
+};
+
 module.exports = {
   async up(queryInterface, Sequelize) {
     // First, get all targeted workouts to create clips for them
@@ -132,6 +171,36 @@ module.exports = {
       
       return exercises;
     };
+
+    // Helper to get appropriate video for targeted workout
+    function getVideoForTargetedWorkout(workout, clipOrder) {
+      let videoPool = [];
+      
+      // Choose video pool based on gender target
+      if (workout.gender_target === 'male') {
+        videoPool = videoCategories.male.length > 0 ? videoCategories.male : videoCategories.both;
+      } else if (workout.gender_target === 'female') {
+        videoPool = videoCategories.female.length > 0 ? videoCategories.female : videoCategories.both;
+      } else {
+        videoPool = videoCategories.both;
+      }
+      
+      // If no suitable videos found, use all videos
+      if (videoPool.length === 0) {
+        videoPool = uploadedVideos;
+      }
+      
+      // Use deterministic index based on workout id and clip order
+      const videoIndex = (workout.id.charCodeAt(0) + clipOrder) % videoPool.length;
+      return videoPool[videoIndex];
+    }
+    
+    // Helper to get thumbnail for targeted workout
+    function getThumbnailForTargetedWorkout(workout, clipOrder) {
+      // Use a different algorithm for thumbnails to vary them from videos
+      const thumbnailIndex = (workout.id.charCodeAt(1) + clipOrder * 13) % uploadedThumbnails.length;
+      return uploadedThumbnails[thumbnailIndex];
+    }
     
     // Create clips for each workout
     workouts.forEach((workout, workoutIndex) => {
@@ -142,9 +211,9 @@ module.exports = {
         const exercise = exercises[i];
         const clipOrder = i + 1;
         
-        // Generate realistic video key based on workout and clip
-        const videoKey = `targeted/${workout.id.substring(0, 8)}/clip-${clipOrder}.mp4`;
-        const thumbnailKey = `targeted/${workout.id.substring(0, 8)}/thumb-${clipOrder}.jpg`;
+        // Get video and thumbnail using the same assets as programs
+        const videoKey = getVideoForTargetedWorkout(workout, clipOrder);
+        const thumbnailKey = getThumbnailForTargetedWorkout(workout, clipOrder);
         
         targetedWorkoutClips.push({
           id: uuidv4(),
@@ -188,18 +257,35 @@ module.exports = {
     });
     
     // Show sample clips from first workout
-    console.log('\n🎬 Sample Clips Structure:');
+    console.log('\n🎬 Sample Clips Structure (Using Same Assets as Programs):');
     const firstWorkout = workouts[0];
     const firstWorkoutClips = targetedWorkoutClips
       .filter(c => c.targeted_workout_id === firstWorkout.id)
       .slice(0, 3);
     
-    console.log(`   Workout: ${firstWorkout.title}`);
+    console.log(`   Workout: ${firstWorkout.title} (${firstWorkout.gender_target})`);
     console.log(`   Total clips: ${firstWorkout.clip_count} (${firstWorkout.clip_count * 30}s = ${firstWorkout.total_duration/60}min)`);
-    console.log(`   Sample clips:`);
+    console.log(`   Sample clips with Digital Ocean assets:`);
     firstWorkoutClips.forEach((clip, i) => {
-      console.log(`     ${i+1}. ${clip.exercise} - "${clip.instructions?.substring(0, 50)}..."`);
+      console.log(`     ${i+1}. ${clip.exercise}`);
+      console.log(`        Video: ${clip.video_key}`);
+      console.log(`        Thumbnail: ${clip.thumbnail_key}`);
     });
+    
+    // Show all assets being used
+    console.log('\n🌊 Digital Ocean Assets Used for Targeted Workouts:');
+    console.log(`   Total video assets: ${uploadedVideos.length}`);
+    console.log(`   Total thumbnail assets: ${uploadedThumbnails.length}`);
+    console.log(`   Videos categorized for men: ${videoCategories.male.length}`);
+    console.log(`   Videos categorized for women: ${videoCategories.female.length}`);
+    console.log(`   Videos categorized as unisex: ${videoCategories.both.length}`);
+    
+    console.log('\n🔗 Sample Digital Ocean URLs (same as programs):');
+    console.log(`   Video: https://my-fitness-app.fra1.digitaloceanspaces.com/${uploadedVideos[0]}`);
+    console.log(`   Thumbnail: https://my-fitness-app.fra1.digitaloceanspaces.com/${uploadedThumbnails[0]}`);
+    
+    console.log('\n💡 NOTE: Targeted workouts are using the SAME video/thumbnail assets as the main programs.');
+    console.log('   This ensures consistency and reuses existing Digital Ocean Spaces content.');
   },
 
   async down(queryInterface, Sequelize) {

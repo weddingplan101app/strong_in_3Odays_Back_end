@@ -140,6 +140,47 @@ export class Nutrition extends Model<Nutrition> {
     field: 'sort_order'
   })
   sortOrder!: number;
+  @Column({
+  type: DataType.INTEGER,
+  allowNull: true,
+  field: 'protein_g'
+})
+proteinG!: number | null;
+
+@Column({
+  type: DataType.INTEGER,
+  allowNull: true,
+  field: 'carbs_g'
+})
+carbsG!: number | null;
+
+@Column({
+  type: DataType.INTEGER,
+  allowNull: true,
+  field: 'fat_g'
+})
+fatG!: number | null;
+
+@Column({
+  type: DataType.INTEGER,
+  allowNull: true,
+  field: 'fiber_g'
+})
+fiberG!: number | null;
+
+@Column({
+  type: DataType.INTEGER,
+  allowNull: true,
+  field: 'servings'
+})
+servings!: number | null;
+
+@Column({
+  type: DataType.ENUM('beginner', 'intermediate', 'advanced'),
+  allowNull: true,
+  defaultValue: 'intermediate'
+})
+difficulty!: string;
 }
 
 export default Nutrition;
