@@ -15,6 +15,10 @@
   import analyticsRoutes from './modules/analytics/analytics.route';
   import targetedWorkoutRoutes from './modules/targeted/targeted-workout.routes';
   import nutritionRoutes from './modules/nutrition/nutrition.route';
+  import adminRoutes from './modules/admin/admin-management.routes';
+  import adminAuthRoutes from './modules/admin/admin-routes';
+  import adminContent from './modules/admin/admin-content.routes';
+
   //  dotenv.config({ path: path.resolve(__dirname, '../.env') })
  
   // Import other routes as needed
@@ -43,6 +47,9 @@
    { path: '/api/analytics', router: analyticsRoutes },
    { path: '/api/targeted', router: targetedWorkoutRoutes },
    { path: '/api/nutrition', router: nutritionRoutes },
+   { path: '/api/admin', router: adminAuthRoutes },
+   { path: '/api/admin', router: adminRoutes },
+   {path: '/api/admin-content',  router: adminContent}
   //    { path: '/api/v1/workouts', router: workoutRoutes },
   //   { path: '/api/v1/subscriptions', router: subscriptionRoutes },
   //   { path: '/api/admin', router: adminRoutes },
