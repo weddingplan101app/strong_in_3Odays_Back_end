@@ -3,18 +3,17 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Admin } from '../models/Admin.model';
 import { logger } from '../utils/logger';
+import { AdminPayload } from '../types/admin.types';
 
 const JWT_SECRET = process.env.JWT_ADMIN_SECRET || 'admin-secret-key-change-in-production';
 
-export interface AdminAuthRequest extends Request {
-  admin?: {
-    adminId: string;
-    email: string;
-    role: string;
-    isSuperAdmin: boolean;
-    permissions: string[];
+export type AdminAuthRequest = Request & {
+  admin?: AdminPayload;
+  file?: Express.Multer.File;
+  files?: {
+    [fieldname: string]: Express.Multer.File[];
   };
-}
+};
 
 export const adminAuthMiddleware = async (
   req: AdminAuthRequest,
@@ -52,6 +51,7 @@ export const adminAuthMiddleware = async (
     req.admin = {
       adminId: admin.id,
       email: admin.email,
+      username: admin.username,
       role: admin.role,
       isSuperAdmin: admin.isSuperAdmin,
       permissions: admin.permissions || []
