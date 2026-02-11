@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    // "types": ["node", "express"],
+    "types": ["node", "express", "multer"],
     "target": "es2018",
     "module": "commonjs",
     "outDir": "./dist",
