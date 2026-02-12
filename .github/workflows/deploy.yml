@@ -91,6 +91,7 @@
             DO_SPACES_REGION=${{ secrets.DO_SPACES_REGION }}
             DO_SPACES_CDN_URL=${{ secrets.DO_SPACES_CDN_URL }}
             SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+            SETUP_TOKEN=${{ secrets.SETUP_TOKEN }}
 
             # JWT Configuration
             JWT_SECRET=${{ secrets.JWT_SECRET }}
@@ -132,6 +133,7 @@
                   DO_SPACES_REGION: '${{ secrets.DO_SPACES_REGION }}',
                   DO_SPACES_CDN_URL: '${{ secrets.DO_SPACES_CDN_URL }}',
                   SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_URL }}',
+                  SETUP_TOKEN: '${{ secrets.SETUP_TOKEN }}',
                   JWT_SECRET: '${{ secrets.JWT_SECRET }}',
                   JWT_REFRESH_SECRET: '${{ secrets.JWT_REFRESH_SECRET }}',
                   JWT_EXPIRE: '30d',
